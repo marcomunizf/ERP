@@ -1,389 +1,341 @@
 # SPEC – Sistema ERP de Controle de Loja
-
-> Versão: 0.1  
-> Autor: [Marco Muniz]  
-> Data: [01/12/2025]  
-> Status:  Rascunho / Em uso / Aprovado
-              X
+> Versão: 0.2  
+> Autor: Marco Muniz  
+> Data: 01/12/2025  
+> Status: Rascunho
 
 ---
 
-## 1. Visão Geral
+# 1. Visão Geral
 
-### 1.1. Contexto
+## 1.1. Contexto
 
-O sistema de controle de loja tem como objetivo centralizar o cadastro de produtos, clientes e vendas, permitindo acompanhar o faturamento de forma simples e confiável.
+O sistema ERP interno da loja centraliza cadastros de produtos, clientes, vendas e dívidas.  
+É utilizado exclusivamente por **Admins** e **Vendedores**, com controle de acesso por **login (usuário + senha)**.
 
-O sistema será utilizado em um ambiente de pequena/média loja, com foco em:
+## 1.2. Objetivos
 
-- Cadastro e consulta rápida de produtos
+- **O1:** Reduzir uso de controles manuais e planilhas.
+- **O2:** Permitir cadastro ágil de produtos e clientes.
+- **O3:** Registrar vendas com rapidez e precisão.
+- **O4:** Oferecer visão clara de clientes que devem.
+- **O5:** Fornecer dashboards administrativos para tomada de decisão.
+- **O6:** Criar uma base sólida para análises e expansão futura.
+
+## 1.3. Escopo do MVP
+
+Incluído:
+
+- Login por usuário + senha
+- Gestão de usuários (apenas admin)
+- Cadastro de produtos
+- Cadastro de clientes
 - Registro de vendas
-- Acompanhamento básico de faturamento
-- Registro de clientes para histórico de compras
+- Controle de dívidas (vendas em aberto)
+- Listagem de clientes devedores
+- Dashboard simples para Admin
 
-### 1.2. Objetivos
+Fora do MVP:
 
-- **O1:** Reduzir o uso de planilhas soltas / controles manuais.  
-- **O2:** Facilitar o cadastro e a consulta de produtos e clientes.  
-- **O3:** Permitir o registro rápido de vendas no caixa.  
-- **O4:** Oferecer visão de faturamento diário, semanal e mensal.  
-- **O5:** Preparar uma base de dados limpa para futuras análises (BI, relatórios, etc.).
-
-### 1.3. Escopo (MVP)
-
-Incluído no MVP:
-
-- Autenticação básica (login/logout)
-- Cadastro de Produtos
-- Cadastro de Clientes
-- Registro de Vendas (com itens)
-- Visão de Faturamento (dashboard simples)
-- Consulta / filtros básicos
-
-Fora do escopo do MVP (pode entrar em versões futuras):
-
-- Controle de estoque avançado (entrada/saída, inventário completo)
+- Controle de estoque avançado
+- Integração com pagamentos externos
+- Multi-loja
+- App mobile
 
 ---
 
-## 2. Perfis de Usuário
+# 2. Perfis de Usuário
 
-### 2.1. Usuário Administrador
+## 2.1. Usuário Administrador (ADMIN)
 
-- Pode criar/editar/remover usuários do sistema.
-- Pode criar/remover produtos.
-- Pode criar/remover clientes.  
-- Tem acesso a todos os relatórios e cadastros. 
+- Pode criar/editar/desativar usuários (vendedores e admins).
+- Pode criar, editar e inativar produtos.
+- Pode criar, editar e inativar clientes.
+- Pode registrar vendas.
+- Acessa dashboards exclusivos.
+- Acessa relatórios e visão consolidada de dívidas.
 
-### 2.2. Usuário Vendedor / Operador de Caixa
+## 2.2. Usuário Vendedor (VENDEDOR)
 
 - Pode logar no sistema.
-- Pode criar produtos.
-- Pode criar clientes.
-- Pode registrar vendas.  
-- Pode consultar produtos e clientes.  
-- Não pode excluir usuários ou alterar configurações críticas.
+- Pode cadastrar clientes.
+- Pode registrar vendas.
+- Pode consultar produtos e clientes.
+- Pode ver lista de clientes devedores.
+- **Não pode**: criar usuários, excluir dados, acessar dashboards administrativos, criar produtos.
 
 ---
 
-## 3. Glossário
+# 3. Glossário
 
-- **Produto:** Item físico ou serviço vendido pela loja.  
-- **Cliente:** Pessoa física ou jurídica que realiza compras.  
-- **Venda:** Transação composta por um cabeçalho (data, cliente, total) e itens (produto, quantidade, preço).  
-- **Item de Venda:** Linha da venda, associando um produto a quantidade e valor.  
-- **Faturamento:** Soma dos valores de venda em determinado período.  
-
----
-
-## 4. Modelo de Domínio (conceitual)
-
-### 4.1. Entidades Principais
-
-- **Produto**
-  - id
-  - nome
-  - descricao
-  - preco_unitario
-  - codigo_barras (opcional)
-  - categoria (opcional)
-  - ativo (boolean)
-
-- **Cliente**
-  - id
-  - nome
-  - documento (CPF/CNPJ) [opcional no MVP]
-  - telefone
-  - email [opcional]
-  - observacoes [opcional]
-  - ativo (boolean)
-
-- **Usuario**
-  - id
-  - nome
-  - email
-  - senha_hash
-  - perfil (ADMIN / VENDEDOR)
-  - ativo (boolean)
-
-- **Venda**
-  - id
-  - data_hora
-  - id_cliente [opcional – venda pode ser “cliente não cadastrado”]
-  - id_usuario_vendedor
-  - valor_total
-  - forma_pagamento (DINHEIRO / CARTAO / PIX / OUTRO)
-  - observacoes [opcional]
-
-- **ItemVenda**
-  - id
-  - id_venda
-  - id_produto
-  - quantidade
-  - preco_unitario
-  - desconto_valor [opcional]
-  - subtotal
+- **Usuário:** pessoa autorizada a acessar o sistema.
+- **Produto:** item comercializado pela loja.
+- **Cliente:** pessoa que compra e pode ter saldo em aberto.
+- **Venda:** conjunto de itens vendidos para um cliente.
+- **Item de Venda:** produto com quantidade + preço.
+- **Dívida:** venda cujo status de pagamento está “EM_ABERTO”.
+- **Dashboard:** visão visual agregada com KPIs.
 
 ---
 
-## 5. Requisitos Funcionais
+# 4. Modelo de Domínio (Conceitual)
 
-> Estrutura sugerida: ID, Nome, Descrição, Fluxo principal, Regras de negócio, Critérios de aceite.
+## 4.1. Entidades Principais
 
-### RF-01 – Autenticação de Usuário
+### Usuário
+- id
+- nome
+- usuario (login) — string única
+- senha_hash
+- perfil (ADMIN / VENDEDOR)
+- ativo (boolean)
+
+### Produto
+- id
+- nome
+- descricao (opcional)
+- preco_unitario
+- codigo_barras (opcional)
+- categoria (opcional)
+- ativo (boolean)
+
+### Cliente
+- id
+- nome
+- documento (opcional)
+- telefone (opcional)
+- email (opcional)
+- observacoes (opcional)
+- ativo (boolean)
+
+### Venda
+- id
+- data_hora
+- id_cliente (opcional)
+- id_usuario_vendedor
+- valor_total
+- status_pagamento (PAGO / EM_ABERTO)
+- forma_pagamento (DINHEIRO / CARTAO / PIX / OUTRO)
+- observacoes (opcional)
+
+### ItemVenda
+- id
+- id_venda
+- id_produto
+- quantidade
+- preco_unitario
+- desconto_valor (opcional)
+- subtotal
+
+---
+
+# 5. Requisitos Funcionais
+
+> Estrutura: descrição, fluxo principal, regras de negócio, critérios de aceite.
+
+---
+
+## RF-01 — Autenticação por Usuário e Senha
 
 **Descrição:**  
-Permitir que usuários cadastrados façam login no sistema com usuário e senha.
+Permitir login com *usuário + senha*, validando perfis e permissões.
 
-**Fluxo principal:**
-1. Usuário acessa a tela de login.
+**Fluxo:**
+1. Usuário entra na tela de login.
 2. Informa usuário e senha.
 3. Sistema valida credenciais.
-4. Em caso de sucesso, redireciona para o dashboard inicial.
-5. Em caso de erro, exibe mensagem genérica: “Usuário ou senha inválidos”.
+4. Em sucesso: redireciona para tela inicial do perfil.
+5. Em falha: exibe “Usuário ou senha inválidos”.
 
-**Regras de negócio:**
-- Senha deve ser armazenada com hash (nunca em texto puro).
-- Usuários inativos não podem acessar o sistema.
+**Regras:**
+- Senha armazenada com hash.
+- Usuário inativo não acessa.
 
 **Critérios de aceite:**
-- CA1: Usuário com usuário/senha corretos acessa a área logada.
-- CA2: Usuário com usuário ou senha incorretos recebe mensagem e permanece na tela de login.
-- CA3: Usuário inativo não consegue fazer login.
+- CA1: Login válido acessa área logada.
+- CA2: Login inválido exibe erro.
+- CA3: Usuário desativado não acessa.
 
 ---
 
-### RF-02 – Cadastro de Produtos
+## RF-02 — Gestão de Usuários (Admin)
 
 **Descrição:**  
-Permitir criar, editar, listar e inativar produtos.
+Permitir que admins gerenciem vendedores e outros admins.
 
-**Fluxo principal (criação):**
-1. Usuário acessa a tela de produtos.
-2. Clica em “Novo Produto”.
-3. Informa: nome, preço unitário e (opcionalmente) descrição, código de barras, categoria.
-4. Salva o produto.
-5. Sistema confirma criação.
+**Fluxo:**
+1. Admin acessa tela “Usuários”.
+2. Pode criar, editar, desativar usuários.
+3. Sistema garante unicidade do campo `usuario`.
 
-**Regras de negócio:**
-- Campo `nome` é obrigatório.
-- Campo `preco_unitario` é obrigatório e deve ser maior ou igual a 0.
-- Exclusão física de produtos não deve acontecer no MVP: usar flag `ativo=false` ao invés de deletar.
-- Produtos inativos não devem aparecer na pesquisa padrão (usar filtro “mostrar inativos” opcional).
+**Regras:**
+- Exclusão física não permitida (usar ativo=false).
+- Perfil define permissões.
 
 **Critérios de aceite:**
-- CA1: É possível criar um produto com campos obrigatórios.
-- CA2: É possível editar um produto existente.
-- CA3: É possível inativar um produto, e este deixa de aparecer na listagem padrão.
-- CA4: Produtos inativos podem ser visualizados se o usuário marcar “mostrar inativos”.
+- CA1: Admin cria usuário com sucesso.
+- CA2: Usuário desativado não consegue logar.
+- CA3: Sistema impede criar dois usuários com mesmo login.
 
 ---
 
-### RF-03 – Cadastro de Clientes
+## RF-03 — Cadastro de Produtos (Admin)
 
 **Descrição:**  
-Permitir criar, editar, listar e inativar clientes.
+Admin registra produtos com nome e preço.
 
-**Fluxo principal (criação):**
-1. Usuário acessa a tela de clientes.
-2. Clica em “Novo Cliente”.
-3. Informa ao menos o nome do cliente.
-4. (Opcional) Preenche documento, telefone, email.
-5. Salva o registro.
+**Fluxo:**
+1. Admin acessa “Produtos”.
+2. Clica em “Novo”.
+3. Preenche campos obrigatórios.
+4. Salva.
 
-**Regras de negócio:**
-- Campo `nome` é obrigatório.
-- Não é obrigatório ter documento no MVP.
-- Exclusão física também deve ser evitada; usar `ativo=false`.
+**Regras:**
+- Nome obrigatório.
+- Preço >= 0.
+- Inativação ao invés de exclusão.
 
 **Critérios de aceite:**
-- CA1: É possível cadastrar cliente apenas com nome.
-- CA2: Cliente inativo não aparece em buscas padrão.
-- CA3: Cliente inativo não deve ser selecionável como cliente de uma nova venda.
+- Produto criado, editado e inativado corretamente.
+- Produto inativo não aparece em vendas.
 
 ---
 
-### RF-04 – Registro de Venda
+## RF-04 — Cadastro de Clientes (Admin e Vendedor)
 
 **Descrição:**  
-Permitir que o usuário registre uma venda com um ou mais itens.
+Cadastrar clientes para registro de vendas e histórico.
 
-**Fluxo principal:**
-1. Usuário acessa a tela de “Nova Venda”.
-2. (Opcional) Seleciona um cliente; se não selecionar, venda é registrada como “Cliente não identificado”.
-3. Adiciona itens:
-   - Pesquisa produto por nome ou código de barras.
-   - Informa quantidade.
-   - Sistema sugere o preço unitário do cadastro do produto (pode permitir override ou não, definido na regra de negócio).
-4. Sistema calcula subtotal de cada item e total da venda.
-5. Usuário seleciona forma de pagamento.
-6. Usuário confirma a venda.
-7. Sistema registra a venda e exibe um resumo.
+**Fluxo:**
+1. Acessar “Clientes”.
+2. Clicar “Novo Cliente”.
+3. Preencher nome.
+4. Salvar.
 
-**Regras de negócio:**
-- Uma venda deve ter pelo menos 1 item.
-- Quantidade deve ser > 0.
-- Preço unitário ≥ 0.
-- O valor total da venda é a soma dos subtotais dos itens.
-- Data/hora da venda deve ser salva no momento da confirmação.
+**Regras:**
+- Nome obrigatório.
+- Inativação sem exclusão física.
 
 **Critérios de aceite:**
-- CA1: Não é possível confirmar venda sem itens.
-- CA2: Não é possível adicionar item com quantidade ≤ 0.
-- CA3: O total exibido deve ser exatamente a soma dos itens.
-- CA4: Ao confirmar, a venda fica registrada e pode ser consultada em “Histórico de vendas”.
+- Cliente criado com sucesso.
+- Inativos não aparecem em vendas.
 
 ---
 
-### RF-05 – Consulta de Vendas / Histórico
+## RF-05 — Registro de Vendas
 
 **Descrição:**  
-Permitir filtrar e visualizar vendas por período, cliente e forma de pagamento.
+Registrar venda de um ou mais produtos para um cliente.
 
-**Filtros mínimos:**
-- Data inicial / Data final
-- Cliente (opcional)
-- Forma de pagamento (opcional)
+**Fluxo:**
+1. Usuário acessa “Nova Venda”.
+2. Seleciona cliente (ou marca como “não cadastrado”).
+3. Adiciona itens.
+4. Sistema calcula totais.
+5. Define status de pagamento.
+6. Confirma.
 
-**Informações na listagem:**
-- Data/hora
-- Cliente (ou “Não identificado”)
-- Valor total
-- Forma de pagamento
+**Regras:**
+- Produtos inativos não aparecem.
+- Subtotal = quantidade × preço.
+- Total = soma dos itens – descontos.
 
 **Critérios de aceite:**
-- CA1: Usuário consegue listar vendas de um período.
-- CA2: Usuário consegue filtrar por cliente.
-- CA3: Ao clicar em uma venda, consegue visualizar os itens.
+- Venda registrada com itens corretos.
+- Total calculado automaticamente.
+- Venda “EM_ABERTO” aparece como dívida.
 
 ---
 
-### RF-06 – Dashboard de Faturamento
+## RF-06 — Gestão de Dívidas / Clientes Devedores
 
 **Descrição:**  
-Exibir visão resumida do faturamento em um período.
+Exibir clientes com vendas em aberto e o valor total devido.
 
-**Métricas mínimas:**
-- Total faturado no dia atual.
-- Total faturado no mês atual.
-- Gráfico simples (barra ou linha) com faturamento dos últimos X dias (ex.: 7 ou 30 dias).
+**Fluxo:**
+1. Usuário acessa “Clientes que Devem”.
+2. Sistema lista clientes com vendas EM_ABERTO.
+3. Exibe total em aberto por cliente.
+
+**Regras:**
+- Somar todas as vendas pendentes.
+- Considera status_pagamento.
 
 **Critérios de aceite:**
-- CA1: Valores apresentados batem com a soma das vendas do período.
-- CA2: Usuário pode mudar o período (dia/semana/mês) e ver os dados atualizados.
+- Lista correta mesmo com múltiplas vendas abertas.
+- Clientes sem dívidas não aparecem.
 
 ---
 
-## 6. Requisitos Não Funcionais (RNF)
+## RF-07 — Dashboard Administrativo (Admin)
 
-### RNF-01 – Segurança
+**Descrição:**  
+Admin acessa dashboard com indicadores.
 
-- Senhas armazenadas com hash seguro.
-- Não exibir dados sensíveis em logs.
-- Implementar controle básico de sessão (logout, expiração de sessão após 120 minutos de inatividade).
+**Indicadores:**
+- Faturamento do dia.
+- Faturamento do mês.
+- Total em aberto (dívidas).
+- Quantidade de vendas no período.
+- Vendas por vendedor (opcional).
 
-### RNF-02 – Desempenho
-
-- Listagem de produtos e vendas deve carregar em até ~2 segundos para conjuntos de dados típicos (até alguns milhares de registros).
-
----
-
-## 7. Modelo de Dados (rascunho de tabelas)
-
-> Este é um modelo inicial para guiar a geração de código / migrations.
-
-### Tabela `usuarios`
-
-- id (PK)
-- nome (string)
-- email (string, único)
-- senha_hash (string)
-- perfil (enum: ADMIN, VENDEDOR)
-- ativo (boolean, default true)
-- created_at (datetime)
-- updated_at (datetime)
-
-### Tabela `clientes`
-
-- id (PK)
-- nome (string)
-- documento (string, opcional)
-- telefone (string, opcional)
-- email (string, opcional)
-- observacoes (text, opcional)
-- ativo (boolean, default true)
-- created_at (datetime)
-- updated_at (datetime)
-
-### Tabela `produtos`
-
-- id (PK)
-- nome (string)
-- descricao (text, opcional)
-- preco_unitario (numeric)
-- codigo_barras (string, opcional, único se usado)
-- categoria (string, opcional)
-- ativo (boolean, default true)
-- created_at (datetime)
-- updated_at (datetime)
-
-### Tabela `vendas`
-
-- id (PK)
-- data_hora (datetime)
-- id_cliente (FK clientes.id, opcional)
-- id_usuario_vendedor (FK usuarios.id)
-- valor_total (numeric)
-- forma_pagamento (string ou enum)
-- observacoes (text, opcional)
-- created_at (datetime)
-- updated_at (datetime)
-
-### Tabela `itens_venda`
-
-- id (PK)
-- id_venda (FK vendas.id)
-- id_produto (FK produtos.id)
-- quantidade (numeric)
-- preco_unitario (numeric)
-- desconto_valor (numeric, default 0)
-- subtotal (numeric)
-- created_at (datetime)
-- updated_at (datetime)
+**Critérios de aceite:**
+- Valores e somas devem refletir o banco.
+- Admin exclusivo.
 
 ---
 
-## 8. Casos de Teste (aceitação)
+# 6. Requisitos Não Funcionais
 
-### CT-01 – Login com credenciais válidas
+## RNF-01 — Usabilidade
+- Fluxos simples, poucos cliques para registrar venda.
 
-**Dado** um usuário ativo com usuario e senha cadastrados  
-**Quando** ele informar usuario e senha corretos  
-**Então** deve acessar o dashboard inicial.
+## RNF-02 — Performance
+- Listagem de produtos/ clientes deve carregar em até 2s com volume inicial.
 
-### CT-02 – Cadastro de produto sem nome
+## RNF-03 — Segurança
+- Hash de senha.
+- Perfis protegidos por backend (não só no frontend).
+- Usuários inativos não acessam.
 
-**Quando** o usuário tentar salvar um produto sem preencher o nome  
-**Então** o sistema deve exibir mensagem de erro e não salvar o registro.
+## RNF-04 — Persistência
+- Banco PostgreSQL.
+- Dados persistidos via volume Docker.
 
-### CT-03 – Registro de venda com um item
+## RNF-05 — Backup
+- Backup diário (definido pela loja).
 
-**Dado** pelo menos um produto cadastrado  
-**Quando**
-- Usuário abrir “Nova Venda”
-- Adicionar um item com quantidade > 0
-- Confirmar a venda  
-**Então** a venda deve ser criada, com total igual ao subtotal do item.
-
-### CT-04 – Dashboard de faturamento diário
-
-**Dado** vendas registradas para a data de hoje  
-**Quando** o usuário acessar o dashboard  
-**Então** o total faturado do dia deve ser igual à soma das vendas de hoje.
+## RNF-06 — Disponibilidade
+- Disponível durante funcionamento da loja.
 
 ---
 
-## 9. Instruções:
-> Não invente entidades além das descritas na SPEC.
+# 7. Casos de Teste (Aceitação)
+
+## CT-01 — Login válido
+**Dado** usuário ativo  
+**Quando** informar usuário + senha corretos  
+**Então** deve acessar sistema.
+
+## CT-02 — Login inválido
+**Quando** informar senha incorreta  
+**Então** exibir mensagem de erro.
+
+## CT-03 — Cadastro de Produto sem nome
+Erro ao tentar salvar.
+
+## CT-04 — Registro de Venda
+Venda com item único deve calcular total automaticamente.
+
+## CT-05 — Cliente Devedor
+Cliente com duas vendas EM_ABERTO deve aparecer com soma total correta.
+
+## CT-06 — Dashboard Admin
+Faturamento diário deve refletir soma real das vendas do dia.
 
 ---
+
+# 8. Instruções
+
+- Não criar entidades fora desta SPEC.
+- Alterações estruturais devem ser documentadas.
